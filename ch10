@@ -1,0 +1,37 @@
+
+oc login -u admin -p redhat https://api.ocp4.example.com:6443  # 1.1
+oc get clusterrolebinding -o wide | grep -E 'NAME|self-provisioner'  # 1.2
+oc describe clusterrolebindings self-provisioners # 2.1
+oc adm policy remove-cluster-role-from-group self-provisioner system:authenticated:oauth # 2.2
+oc describe clusterrolebindings self-provisioners  # 2.3
+oc get clusterrolebinding -o wide | grep -E 'NAME|self-provisioner' #  2.4
+oc login -u leader -p redhat # 2.5 a
+oc new-project test  # 2.5 b
+oc login -u admin -p redhat # 3.1a
+oc new-project auth-rbac # 3.1b
+oc policy add-role-to-user admin leader  # 3.2
+
+oc adm groups new dev-group # 4.1
+oc adm groups add-users dev-group developer # 4.2
+oc adm groups new qa-group # 4.3
+oc adm groups add-users qa-group qa-engineer # 4.4
+oc get groups  # 4.5
+
+oc login -u leader -p redhat # 5.1
+oc policy add-role-to-group edit dev-group # 5.2
+oc policy add-role-to-group view qa-group # 5.3
+oc get rolebindings -o wide # 5.4
+
+oc login -u developer -p developer # 6.1
+oc new-app --name httpd httpd:2.4   # 6.2
+oc policy add-role-to-user edit qa-engineer  # 6.3
+
+oc login -u qa-engineer -p redhat # 7.1
+oc scale deployment httpd --replicas 3 # 7.2
+
+oc login -u admin -p redhat # 8.1
+oc adm policy add-cluster-role-to-group \
+--rolebinding-name self-provisioners \
+self-provisioner system:authenticated:oauth  # 8.2
+
+lab auth-rbac finish

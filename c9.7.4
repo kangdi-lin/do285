@@ -1,0 +1,4 @@
+oc set volumes \
+deployment/postgresql-persistent2 \
+--add --name postgresql-storage --type pvc \
+--claim-name postgresql-storage --mount-path /var/lib/pgsql

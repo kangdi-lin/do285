@@ -1,0 +1,2 @@
+source /usr/local/etc/ocp4.config
+git clone https://github.com/${RHT_OCP4_GITHUB_USER}/do285
