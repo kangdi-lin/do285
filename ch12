@@ -1,0 +1,50 @@
+
+lab network-sdn start
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443 # 1.1
+oc new-project network-sdn # 1.2
+cd ~/DO280/labs/network-sdn  # 2.1
+
+
+oc create -f todo-db.yaml # 2.2
+oc status # 2.3
+oc get pods # 2.4
+oc cp db-data.sql mysql-6dd69fbbf4-gtx8n:/tmp/  # 2.5
+oc rsh mysql-6dd69fbbf4-gtx8n bash  # 2.6
+mysql -u root items < /tmp/db-data.sql
+mysql -u root items -e "show tables;"  # 2.7
+exit
+
+oc create -f todo-frontend.yaml # 3.1
+oc get pods  # 3.2
+
+oc expose service frontend --hostname todo.apps.ocp4.example.com # 4.1
+oc get routes # 4.2
+oc logs frontend-5598cfc446-89bhh # 4.3
+
+oc get service/mysql -o jsonpath="{.spec.clusterIP}{'\n'}" # 5.1
+oc debug -t deployment/frontend # 5.2
+
+curl -v telnet://172.30.209.134:3306 # 5.3
+
+
+oc get service/frontend -o jsonpath="{.spec.clusterIP}{'\n'}" # 6.1
+oc debug -t deployment/mysql --image registry.access.redhat.com/ubi8/ubi:8.0 # 6.2
+curl -m 10 -v http://172.30.23.147:8080  # 6.3
+
+
+oc get pods -o wide -l name=frontend # 7.1
+oc debug -t deployment/mysql --image registry.access.redhat.com/ubi8/ubi:8.0 # 7.2
+curl -v http://10.128.2.61:8080/todo/  # 7.3
+
+oc get svc # 8.1
+oc describe svc/frontend # 8.2
+oc describe deployment/frontend |  grep Labels -A1  # 8.3
+
+oc edit svc/frontend # 9.1  
+oc describe svc/frontend # 9.2
+
+cd  # 10.1
+oc delete project network-sdn # 10.2
+
+lab network-sdn finish

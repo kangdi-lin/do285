@@ -1,0 +1,28 @@
+
+lab authorization-scc start
+oc login -u developer -p developer https://api.ocp4.example.com:6443 # 1.1
+oc new-project authorization-scc  # 1.2
+
+oc new-app --name gitlab --docker-image quay.io/redhattraining/gitlab-ce:8.4.3-ce.0 # 2.1
+oc get pod # 2.2
+
+# oc logs pod/gitlab-7d67db7875-gcsjl # 2.3
+oc logs `oc get pod | tail -1 | cut -d\  -f1`  # 2.3
+
+oc login -u admin -p redhat  # 2.4
+oc get pod/gitlab-648947b54f-px45r -o yaml | oc adm policy scc-subject-review -f -  # 2.5
+
+oc create sa gitlab-sa # 3.1
+oc adm policy add-scc-to-user anyuid -z gitlab-sa # 3.2
+
+oc login -u developer -p developer # 4.1
+oc set serviceaccount deployment/gitlab gitlab-sa # 4.2
+oc get pods # 4.3
+
+oc expose service/gitlab --port 80 --hostname gitlab.apps.ocp4.example.com # 5.1
+oc get routes # 5.2
+curl -s http://gitlab.apps.ocp4.example.com/users/sign_in | grep '<title>' # 5.3
+
+oc delete project authorization-scc # 6.1
+
+lab authorization-scc finish
