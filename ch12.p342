@@ -1,0 +1,62 @@
+
+lab network-ingress start
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443 # 1.1
+oc new-project network-ingress # 1.2
+
+
+oc create -f  ~/DO280/labs/network-ingress/todo-app-v1.yaml # 2.1
+oc status # 2.2
+oc expose svc todo-http --hostname todo-http.apps.ocp4.example.com # 2.3
+oc get routes # 2.4
+
+ip a | grep 172.25.250.9 # 2.6a
+sudo tcpdump -i eth0 -A -n port 80 | grep js # 2.6b
+
+cd ~/DO280/labs/network-ingress #  3.1a
+oc create route edge todo-https --service todo-http --hostname todo-https.apps.ocp4.example.com # 3.1b
+curl https://todo-https.apps.ocp4.example.com  # 3.3
+oc login -u admin -p redhat # 3.4
+oc extract secrets/router-ca --keys tls.crt -n openshift-ingress-operator  # 3.5
+curl -I -v --cacert tls.crt https://todo-https.apps.ocp4.example.com # 3.6
+oc login -u developer -p developer  # 3.7
+oc get svc todo-http -o jsonpath="{.spec.clusterIP}{'\n'}"  # 3.8
+172.30.100.83
+
+oc debug -t deployment/todo-http --image registry.access.redhat.com/ubi8/ubi:8.0 # 3.9
+	curl -v 172.30.100.83
+oc delete route todo-https # 3.12
+
+cd certs # 4.1
+openssl genrsa -out training.key 2048 # 4.2
+openssl req -new -subj "/C=US/ST=North Carolina/L=Raleigh/O=Red Hat/CN=todo-https.apps.ocp4.example.com" -key training.key -out training.csr # 4.3k/CN
+
+openssl x509 -req -in training.csr \
+-passin file:passphrase.txt \
+-CA training-CA.pem -CAkey training-CA.key -CAcreateserial \
+-out training.crt -days 1825 -sha256 -extfile training.ext # 4.4
+
+cd ~/DO280/labs/network-ingress # 4.6
+
+oc create secret tls todo-certs \
+--cert certs/training.crt \
+--key certs/training.key # 5.1
+oc create -f todo-app-v2.yaml # 5.2
+oc get pods # 5.3
+oc describe pod todo-https-85bff5b996-fjjlm | grep Mounts -A2 # 5.4
+
+oc create route passthrough todo-https \
+--service todo-https --port 8443 \
+--hostname todo-https.apps.ocp4.example.com  # 6.1
+
+curl -vvI --cacert certs/training-CA.pem https://todo-https.apps.ocp4.example.com # 6.2
+
+oc get svc todo-https -o jsonpath="{.spec.clusterIP}{'\n'}" # 7.1
+oc debug -t deployment/todo-https --image registry.access.redhat.com/ubi8/ubi:8.0  # 7.2
+curl -I https://172.30.24.245  # 7.3
+curl -s -k https://172.30.24.245:8443 | head -n5 # 7.4
+
+oc delete project network-ingress # 8
+
+lab network-ingress finish
+

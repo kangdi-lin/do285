@@ -1,0 +1,33 @@
+lab schedule-pods start
+oc login -u developer -p developer  https://api.ocp4.example.com:6443 # 1.1
+oc new-project schedule-pods # 1.2
+
+oc new-app --name hello     --docker-image quay.io/redhattraining/hello-world-nginx:v1.0 # 2.1
+oc expose svc/hello # 2.2
+oc scale --replicas 4 deployment/hello # 2.3
+oc get pods -o wide # 2.4
+
+oc login -u admin -p redhat # 3.1
+oc get nodes -L env # 3.2
+oc label node master01 env=dev # 3.3
+oc label node master02 env=prod # 3.4
+oc get nodes -L env # 3.5
+
+oc login -u developer -p developer # 4.1
+oc edit deployment/hello # 4.2
+oc get pods -o wide # 4.3
+oc delete project schedule-pods # 4.4
+
+oc login -u admin -p redhat # 5.1
+oc label node -l env env- # 5.2
+
+oc login -u developer -p developer # 6.1
+oc project schedule-pods-ts # 6.1b
+oc get pods # 6.2
+
+oc describe pod hello-ts-5dbff9f44-8h7c7 # 6.3 sample
+oc describe pod hello-ts-6bc96f8664-wx7wr # 6.3
+oc edit deployment/hello-ts #6.4
+oc get pods # 6.5
+
+lab schedule-pods finish

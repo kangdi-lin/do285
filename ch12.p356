@@ -1,0 +1,72 @@
+lab network-policy start
+oc login -u developer -p developer  https://api.ocp4.example.com:6443 # 1.1
+oc new-project network-policy # 1.2
+
+
+oc new-app --name hello --docker-image quay.io/redhattraining/hello-world-nginx:v1.0 # 2.1a
+oc new-app --name test --docker-image  quay.io/redhattraining/hello-world-nginx:v1.0  # 2.1b
+
+oc expose service hello # 2.2
+
+~/DO280/labs/network-policy/display-project-info.sh # 3.1
+POD NAME                 IP ADDRESS
+hello-6c4984d949-k488q   10.9.0.55
+test-c4d74c9d5-tvq7c     10.9.0.56
+
+SERVICE NAME   CLUSTER-IP
+hello          172.30.133.226
+test           172.30.71.187
+
+ROUTE NAME   HOSTNAME                                     PORT
+hello        hello-network-policy.apps.ocp4.example.com   8080-tcp
+
+oc rsh test-c4d74c9d5-tvq7c curl 10.9.0.55:8080 | grep Hello  # 3.2 
+oc rsh test-c4d74c9d5-tvq7c curl 172.30.133.226:8080 | grep Hello # 3.3
+
+oc new-project network-test # 4.1
+oc new-app --name sample-app --docker-image     quay.io/redhattraining/hello-world-nginx:v1.0 # 4.2
+
+~/DO280/labs/network-policy/display-project-info.sh # 5.1
+..
+sample-app-d5f945-bgq49
+
+
+
+oc rsh sample-app-d5f945-bgq49  curl 10.9.0.55:8080 | grep Hello  # 5.2 
+
+oc rsh sample-app-d5f945-bgq49  curl 172.30.133.226:8080 | grep Hello # 5.3
+
+oc project network-policy # 6.1
+cd ~/DO280/labs/network-policy # 6.2
+vi # 6.3
+oc create -f deny-all.yaml   # 6.4
+
+curl -s     hello-network-policy.apps.ocp4.example.com | grep Hello  # 7.1
+oc rsh test-c4d74c9d5-tvq7c     10.9.0.32:8080 | grep Hello # 7.2
+oc project network-test # 7.3a
+oc rsh sample-app-d5f945-bgq49 curl     10.8.0.14:8080 | grep Hello # 7.3b
+
+
+vi # 8.1
+oc create -n network-policy -f     allow-specific.yaml # 8.2
+oc get networkpolicies -n network-policy # 8.3
+
+
+oc login -u admin -p redhat # 9.1
+
+oc label namespace network-test     name=network-test # 9.2
+oc describe namespace network-test # 9.3
+oc login -u developer -p developer # 9.4
+
+oc rsh sample-app-d5f945-spx9q curl     10.8.0.13:8080 | grep Hello # 10.1 sample
+oc rsh sample-app-d5f945-bgq49 curl 172.30.133.226:8080 | grep Hello # 10.1 same as 3.3
+
+oc create -n network-policy -f     allow-from-openshift-ingress.yaml # 11.2
+oc login -u admin -p redhatoc get networkpolicies -n network-policy # 11.3
+oc login -u admin -p redhat # 11.4
+curl -s     hello-network-policy.apps.ocp4.example.com | grep Hello # 11.5
+
+
+lab network-policy finish
+
+
