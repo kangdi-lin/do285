@@ -1,0 +1,5 @@
+lab console-admin start 
+oc login -u admin -p redhat     https://api.ocp4.example.com:6443 # 1.1
+oc whoami --show-console # 1.2
+
+

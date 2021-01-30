@@ -1,0 +1,34 @@
+lab schedule-scale start
+oc login -u developer -p developer  https://api.ocp4.example.com:6443 # 1.1
+oc new-project schedule-scale # 1.2
+
+vim ~/DO280/labs/schedule-scale/loadtest.yaml # 2.1
+oc create --save-config     -f ~/DO280/labs/schedule-scale/loadtest.yaml # 2.3
+oc get pods # 2.4
+oc describe pod/loadtest-5f9565dbfb-jm9md | grep -A2 -E "Limits|Requests" # 2.5 sample
+oc describe pod/loadtest-7c88f9884b-hhjqb | grep -A2 -E "Limits|Requests" # 2.5 
+
+oc scale --replicas 5 deployment/loadtest # 3.1
+oc get pods # 3.2
+oc scale --replicas 1 deployment/loadtest # 3.3
+oc get pods # 3.4
+
+oc autoscale deployment/loadtest     --min 2 --max 10 --cpu-percent 50 # 4.1
+watch oc get hpa/loadtest # 4.2
+oc get route/loadtest # 4.3
+curl -X GET  http://loadtest-schedule-scale.apps.ocp4.example.com/api/loadtest/v1/cpu/1 # 4.4
+watch oc get hpa/loadtest # 4.5 new session
+
+oc new-app --name scaling --as-deployment-config     --docker-image quay.io/redhattraining/scaling:v1.0 # 5.1
+oc expose svc/scaling # 5.2
+oc scale --replicas 3 dc/scaling # 5.3
+oc get pods -o wide -l deploymentconfig=scaling # 5.4
+oc get route/scaling # 5.5
+~/DO280/labs/schedule-scale/curl-route.sh # 5.6
+
+watch oc get hpa/loadtest # 6
+
+oc delete project schedule-scale # 7
+ 
+lab schedule-scale finish
+

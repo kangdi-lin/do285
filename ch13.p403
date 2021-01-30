@@ -1,0 +1,55 @@
+lab schedule-limit start
+oc login -u developer -p developer  https://api.ocp4.example.com:6443 # 1.1
+oc new-project schedule-limit # 1.2
+
+oc create deployment hello-limit     --image quay.io/redhattraining/hello-world-nginx:v1.0     --dry-run=client -o yaml > ~/DO280/labs/schedule-limit/hello-limit.yaml # 2.1
+
+vi ~/DO280/labs/schedule-limit/hello-limit.yaml # 2.2
+oc create --save-config     -f ~/DO280/labs/schedule-limit/hello-limit.yaml # 2.3
+oc get pods # 2.4 
+oc get events --field-selector type=Warning # 2.5
+
+vi ~/DO280/labs/schedule-limit/hello-limit.yaml # 3.1
+oc apply -f ~/DO280/labs/schedule-limit/hello-limit.yaml # 3.2
+oc get pods # 3.3
+
+oc scale --replicas 4 deployment/hello-limit # 4.1
+oc get pods # 4.2
+oc get events --field-selector type=Warning # 4.3
+oc delete all -l app=hello-limit # 4.4
+
+oc create --save-config     -f ~/DO280/labs/schedule-limit/loadtest.yaml # 5.1
+oc get routes # 5.2
+
+watch oc get pod # 6.1a - open nesession and run this  
+watch oc adm top pod # 6.1b - open nesession and run this  
+curl -X GET     http://loadtest.apps.ocp4.example.com/api/loadtest/v1/mem/150/6 # 6.2
+
+curl -X GET     http://loadtest.apps.ocp4.example.com/api/loadtest/v1/mem/200/60 # 7.1
+oc delete all -l app=loadtest # 7.4
+
+oc login -u admin -p redhat # 8.1
+oc create quota project-quota     --hard cpu="3",memory="1G",configmaps="3"     -n schedule-limit # 8.2
+
+oc login -u developer -p developer # 9.1
+for X in {1..4} 
+do
+oc create configmap my-config${X} --from-literal key${X}=value${X}
+done
+
+oc login -u admin -p redhat # 10.1
+oc adm create-bootstrap-project-template     -o yaml > /tmp/project-template.yaml # 10.2
+vi   /tmp/project-template.yaml # 10.3
+	/home/student/DO280/labs/schedule-limit/quota-limits.yaml 
+
+oc create -f /tmp/project-template.yaml     -n openshift-config # 10.4
+oc edit projects.config.openshift.io/cluster # 10.5
+
+oc get pods -n openshift-apiserver # 10.6
+oc new-project template-test # 10.7
+oc get resourcequotas,limitranges # 10.8
+
+oc delete project schedule-limit # 11.1
+oc delete project template-test # 11.2
+
+lab schedule-limit finish
